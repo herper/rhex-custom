@@ -368,7 +368,12 @@ export function RegisterForm({
     const successMessage = result.message ?? (autoLogin ? "注册成功，正在跳转到首页…" : "注册成功，请前往登录页登录")
     toast.success(successMessage, "注册成功")
 
-    router.replace(autoLogin ? redirectTarget : buildLoginHrefWithRedirect(redirectTarget))
+    if (autoLogin) {
+      window.location.replace(redirectTarget)
+      return
+    }
+
+    router.replace(buildLoginHrefWithRedirect(redirectTarget))
     router.refresh()
     setLoading(false)
   }

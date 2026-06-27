@@ -24,15 +24,15 @@ export function NotificationListItem({ id, href, isRead, typeLabel, title, conte
   const [isDeleting, setIsDeleting] = useState(false)
 
   async function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || isRead) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
+
+    if (isRead || isPending) {
       return
     }
 
     event.preventDefault()
-
-    if (isPending) {
-      return
-    }
 
     setIsPending(true)
 

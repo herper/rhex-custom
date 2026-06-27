@@ -360,6 +360,17 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
     })
   }, [])
 
+  const clearCommentHighlightSearchParam = useCallback((commentId: string) => {
+    const currentUrl = new URL(window.location.href)
+
+    if (currentUrl.searchParams.get("highlight") !== commentId) {
+      return
+    }
+
+    currentUrl.searchParams.delete("highlight")
+    window.history.replaceState(window.history.state, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
+  }, [])
+
   useEffect(() => {
     function syncHighlightedCommentFromLocation() {
       const highlightedFromSearch = searchParams.get("highlight")
@@ -383,7 +394,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
     return () => {
       window.removeEventListener("hashchange", syncHighlightedCommentFromLocation)
     }
-  }, [pathname, searchParams, triggerCommentHighlight])
+  }, [searchParams, triggerCommentHighlight])
 
   useEffect(() => {
     if (!highlightedCommentId) {
@@ -432,16 +443,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
         stableAttempts = isSettled ? stableAttempts + 1 : 0
 
         if (stableAttempts >= COMMENT_ANCHOR_SCROLL_STABLE_ATTEMPTS && elapsed >= COMMENT_ANCHOR_SCROLL_MIN_SETTLE_MS) {
-          const currentUrl = new URL(window.location.href)
-          if (currentUrl.searchParams.get("highlight") === highlightedCommentId) {
-            currentUrl.searchParams.delete("highlight")
-            currentUrl.hash = `comment-${highlightedCommentId}`
-            window.history.replaceState(
-              window.history.state,
-              "",
-              `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
-            )
-          }
+          clearCommentHighlightSearchParam(highlightedCommentId)
           return
         }
 
@@ -475,7 +477,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
       }
       window.clearTimeout(timeoutId)
     }
-  }, [ensureHighlightedCommentVisible, highlightedCommentId])
+  }, [clearCommentHighlightSearchParam, ensureHighlightedCommentVisible, highlightedCommentId])
 
   const updateReplyBoxPinnedLayout = useCallback(() => {
     const element = replyBoxContainerRef.current

@@ -202,6 +202,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
                   description={zone.description}
                   summary={`当前分区共覆盖 ${zoneBoards.length} 个节点，累计 ${zone.count} 篇内容`}
                   summaryActions={<RssSubscribeButton href={`/zones/${zone.slug}/rss.xml`} label="RSS" />}
+                  defaultVisibleCount={zoneBoards.length + 1}
                   pills={[
 
                     {

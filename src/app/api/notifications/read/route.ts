@@ -1,3 +1,4 @@
+import { RelatedType } from "@/db/types"
 import { countUnreadNotifications, findCommentsWithPostByIds, findNotificationTargetById } from "@/db/notification-read-queries"
 import { markNotificationAsRead } from "@/db/notification-queries"
 import { apiSuccess, createUserRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
@@ -9,18 +10,16 @@ import { revalidateUserSurfaceCache } from "@/lib/user-surface"
 export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   const body = await readJsonBody(request)
   const notificationId = requireStringField(body, "notificationId", "缺少通知 ID")
+  const notificationTarget = await findNotificationTargetById(currentUser.id, notificationId)
 
-  const [notification] = await Promise.all([
-    findNotificationTargetById(currentUser.id, notificationId),
-    markNotificationAsRead(currentUser.id, notificationId),
-  ])
+  await markNotificationAsRead(currentUser.id, notificationId)
 
-  if (notification?.relatedType === "COMMENT") {
-    const [comment] = await findCommentsWithPostByIds([notification.relatedId])
-    if (comment?.post) {
+  if (notificationTarget?.relatedType === RelatedType.COMMENT) {
+    const [commentTarget] = await findCommentsWithPostByIds([notificationTarget.relatedId])
+    if (commentTarget?.post) {
       revalidatePostCommentCache({
-        postId: comment.post.id,
-        slug: comment.post.slug,
+        postId: commentTarget.post.id,
+        slug: commentTarget.post.slug,
       })
     }
   }
@@ -37,7 +36,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
     occurredAt: new Date().toISOString(),
   })
 
-  return apiSuccess(undefined, "已标记为已读")
+  return apiSuccess({ unreadNotificationCount }, "已标记为已读")
 }, {
   errorMessage: "标记通知失败",
   logPrefix: "[api/notifications/read] unexpected error",

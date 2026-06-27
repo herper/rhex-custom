@@ -16,7 +16,7 @@ import { SiteHeader } from "@/components/site-header"
 import { getHomeAnnouncements } from "@/lib/announcements"
 import { getCurrentUser } from "@/lib/auth"
 import { checkBoardPermission } from "@/lib/board-access"
-import { getBoardBySlug, getBoardModerators, getBoardPosts, getBoards, isUserFollowingBoard } from "@/lib/boards"
+import { getBoardBySlug, getBoardModeratorGroups, getBoardPosts, getBoards, isUserFollowingBoard } from "@/lib/boards"
 import { buildAddonHookSearchParams, buildHookedPostStreamDisplayItems } from "@/lib/addon-feed-posts"
 import { DEFAULT_TAXONOMY_POST_SORT, normalizeTaxonomyPostSort, type TaxonomyPostSort } from "@/lib/forum-taxonomy-sort"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
@@ -27,7 +27,8 @@ import { buildMetadataKeywords } from "@/lib/seo"
 import { getSiteSettings } from "@/lib/site-settings"
 import { getZones } from "@/lib/zones"
 import { ForumPostStreamView } from "@/components/forum/forum-post-stream-view"
-import { resolveContentVisibleAdminActor } from "@/lib/admin-scope-permissions"
+import { canAdminActorManageBoardWithPermission, canAdminActorUsePermission, resolveContentVisibleAdminActor } from "@/lib/admin-scope-permissions"
+import { resolveAdminActorFromSessionUser } from "@/lib/moderator-permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -59,6 +60,19 @@ function buildBoardPostsApiPath(slug: string, sort: TaxonomyPostSort) {
 
   const queryString = query.toString()
   return queryString ? `/api/boards/${encodeURIComponent(slug)}/posts?${queryString}` : `/api/boards/${encodeURIComponent(slug)}/posts`
+}
+
+function buildBoardManagementHref(board: { slug: string; zoneId?: string | null }) {
+  const query = new URLSearchParams({
+    tab: "structure",
+    structureKeyword: board.slug,
+  })
+
+  if (board.zoneId) {
+    query.set("structureZoneId", board.zoneId)
+  }
+
+  return `/admin?${query.toString()}`
 }
 
 export async function generateMetadata(props: PageProps<"/boards/[slug]">): Promise<Metadata> {
@@ -130,11 +144,17 @@ export default async function BoardPage(props: PageProps<"/boards/[slug]">) {
   const rawSort = readSearchParam(searchParams?.sort)
   const currentPage = Math.max(1, Number(rawPage ?? "1") || 1)
   const currentSort = normalizeTaxonomyPostSort(rawSort)
+  const [contentVisibleAdminActor, adminActor] = await Promise.all([
+    resolveContentVisibleAdminActor(currentUser),
+    resolveAdminActorFromSessionUser(currentUser),
+  ])
+  const canOpenBoardManagement = await canAdminActorUsePermission(adminActor, "admin.structure.view")
+    && await canAdminActorManageBoardWithPermission(adminActor, "admin.structure.view", board.id, board.zoneId)
   const postListViewer = {
     userId: currentUser?.id ?? null,
-    adminActor: await resolveContentVisibleAdminActor(currentUser),
+    adminActor: contentVisibleAdminActor,
   }
-  const [postsPage, boards, zones, hotTopics, announcements, moderators] = await Promise.all([
+  const [postsPage, boards, zones, hotTopics, announcements, moderatorGroups] = await Promise.all([
     permission.allowed
       ? getBoardPosts(params.slug, currentPage, settings.boardPostPageSize, currentSort, postListViewer)
       : Promise.resolve({ items: [], page: 1, pageSize: settings.boardPostPageSize, total: 0, totalPages: 1, hasPrevPage: false, hasNextPage: false }),
@@ -142,7 +162,7 @@ export default async function BoardPage(props: PageProps<"/boards/[slug]">) {
     getZones(),
     settingsPromise.then((settings) => getHomeSidebarHotTopics(settings.homeSidebarHotTopicsCount)),
     getHomeAnnouncements(3),
-    getBoardModerators(board.id),
+    getBoardModeratorGroups(board.id, board.zoneId),
   ])
   const { items: posts, page, totalPages, hasPrevPage, hasNextPage } = postsPage
   const canonicalPage = currentPage !== page ? page : currentPage
@@ -260,12 +280,14 @@ export default async function BoardPage(props: PageProps<"/boards/[slug]">) {
           rightSidebar={(
             <aside className="mt-6 hidden pb-12 lg:block">
               <AddonSlotRenderer slot="board.sidebar.before" />
-              <AddonSurfaceRenderer surface="board.sidebar" props={{ announcements, board, hotTopics, moderators, settings }}>
+              <AddonSurfaceRenderer surface="board.sidebar" props={{ announcements, board, hotTopics, moderators: moderatorGroups.boardModerators, zoneModerators: moderatorGroups.zoneModerators, settings }}>
                 <BoardSidebarPanels
                   user={sidebarUser}
                   hotTopics={hotTopics}
                   board={board}
-                  moderators={moderators}
+                  moderators={moderatorGroups.boardModerators}
+                  zoneModerators={moderatorGroups.zoneModerators}
+                  boardManagementHref={canOpenBoardManagement ? buildBoardManagementHref(board) : undefined}
                   announcements={announcements}
                   showAnnouncements={settings.homeSidebarAnnouncementsEnabled}
                   postLinkDisplayMode={settings.postLinkDisplayMode}
