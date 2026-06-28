@@ -94,6 +94,12 @@ function getNicknameValidationMessage(value: string, settings: SiteSettingsData)
   return matchedWord ? `昵称包含敏感词：${matchedWord}` : ""
 }
 
+function withRegisterSuccessToast(target: string) {
+  const url = new URL(target, window.location.origin)
+  url.searchParams.set("rhexToast", "register-success")
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
 interface RegisterFormProps {
   settings: SiteSettingsData
   addonBeforeFields?: ReactNode
@@ -365,15 +371,13 @@ export function RegisterForm({
     }
 
     const autoLogin = Boolean(result.data?.autoLogin)
-    const successMessage = result.message ?? (autoLogin ? "注册成功，正在跳转到首页…" : "注册成功，请前往登录页登录")
-    toast.success(successMessage, "注册成功")
 
     if (autoLogin) {
-      window.location.replace(redirectTarget)
+      window.location.replace(withRegisterSuccessToast(redirectTarget))
       return
     }
 
-    router.replace(buildLoginHrefWithRedirect(redirectTarget))
+    router.replace(withRegisterSuccessToast(buildLoginHrefWithRedirect(redirectTarget)))
     router.refresh()
     setLoading(false)
   }
@@ -457,6 +461,7 @@ export function RegisterForm({
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 type="button"
+                tabIndex={-1}
                 aria-label={showPassword ? "隐藏密码" : "显示密码"}
                 onClick={() => setShowPassword((current) => !current)}
               >
@@ -488,6 +493,7 @@ export function RegisterForm({
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 type="button"
+                tabIndex={-1}
                 aria-label={showConfirmPassword ? "隐藏确认密码" : "显示确认密码"}
                 onClick={() => setShowConfirmPassword((current) => !current)}
               >
