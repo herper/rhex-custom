@@ -12,6 +12,7 @@ import { TimeTooltip } from "@/components/time-tooltip"
 import { Tooltip } from "@/components/ui/tooltip"
 import { UserStatusBadge } from "@/components/user/user-status-badge"
 import { VipNameTooltip } from "@/components/vip/vip-name-tooltip"
+import { buildGalleryThumbnailSrcSet, buildGalleryThumbnailUrl } from "@/lib/gallery-thumbnail"
 import { getPostPath } from "@/lib/post-links"
 import type { PostRewardPoolMode } from "@/lib/post-reward-pool-config"
 import { cn } from "@/lib/utils"
@@ -70,6 +71,15 @@ function GalleryCoverImage({ src, title }: { src: string; title: string }) {
   const imageRef = useRef<HTMLImageElement | null>(null)
   const [hasLoadError, setHasLoadError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [fallbackToOriginal, setFallbackToOriginal] = useState(false)
+  const imageSrc = fallbackToOriginal ? src : buildGalleryThumbnailUrl(src)
+  const imageSrcSet = fallbackToOriginal ? undefined : buildGalleryThumbnailSrcSet(src)
+
+  useEffect(() => {
+    setHasLoadError(false)
+    setImageLoaded(false)
+    setFallbackToOriginal(false)
+  }, [src])
 
   useEffect(() => {
     const image = imageRef.current
@@ -88,7 +98,7 @@ function GalleryCoverImage({ src, title }: { src: string; title: string }) {
 
     setHasLoadError(true)
     setImageLoaded(true)
-  }, [src])
+  }, [imageSrc])
 
   if (hasLoadError) {
     return <GalleryCoverPlaceholder label="封面暂不可用" icon={ImageOff} />
@@ -100,7 +110,9 @@ function GalleryCoverImage({ src, title }: { src: string; title: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imageRef}
-        src={src}
+        src={imageSrc}
+        srcSet={imageSrcSet}
+        sizes="(max-width: 1023px) 50vw, 16rem"
         alt={title}
         title={title}
         className={cn("block h-auto w-full transition-opacity duration-300", imageLoaded ? "opacity-100" : "opacity-0")}
@@ -108,6 +120,12 @@ function GalleryCoverImage({ src, title }: { src: string; title: string }) {
         decoding="async"
         onLoad={() => setImageLoaded(true)}
         onError={() => {
+          if (!fallbackToOriginal && imageSrc !== src) {
+            setFallbackToOriginal(true)
+            setImageLoaded(false)
+            return
+          }
+
           setHasLoadError(true)
           setImageLoaded(true)
         }}
