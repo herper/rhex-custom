@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { ImageIcon, ImageOff, type LucideIcon } from "lucide-react"
+import { ImageIcon, ImageOff, MessageCircle, type LucideIcon } from "lucide-react"
 
 import { LevelIcon } from "@/components/level-icon"
 import { PostListLink } from "@/components/post/post-list-link"
@@ -12,6 +12,7 @@ import { TimeTooltip } from "@/components/time-tooltip"
 import { Tooltip } from "@/components/ui/tooltip"
 import { UserStatusBadge } from "@/components/user/user-status-badge"
 import { VipNameTooltip } from "@/components/vip/vip-name-tooltip"
+import { formatCompactNumber, formatNumber } from "@/lib/formatters"
 import { buildGalleryThumbnailSrcSet, buildGalleryThumbnailUrl } from "@/lib/gallery-thumbnail"
 import { getPostPath } from "@/lib/post-links"
 import type { PostRewardPoolMode } from "@/lib/post-reward-pool-config"
@@ -181,32 +182,38 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                     {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact className="shrink-0" /> : null}
                   </div>
 
-                  <div className={cn("mt-2 flex min-w-0 items-center gap-1 overflow-hidden text-[11px] text-muted-foreground", isRestrictedAuthor && "grayscale")}>
-                    {showBoard && item.boardSlug ? (
-                      <>
-                        <Link href={`/boards/${item.boardSlug}`} className="flex min-w-0 max-w-[40%] items-center gap-1 font-medium hover:underline" title={item.boardName}>
-                          <LevelIcon icon={item.boardIcon} className="h-3 w-3 shrink-0 text-[11px]" svgClassName="[&>svg]:block" />
-                          <span className="truncate">{item.boardName}</span>
+                  <div className={cn("mt-2 flex min-w-0 items-center justify-between gap-1.5 overflow-hidden text-[11px] text-muted-foreground", isRestrictedAuthor && "grayscale")}>
+                    <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+                      {showBoard && item.boardSlug ? (
+                        <>
+                          <Link href={`/boards/${item.boardSlug}`} className="flex min-w-0 max-w-[40%] items-center gap-1 font-medium hover:underline" title={item.boardName}>
+                            <LevelIcon icon={item.boardIcon} className="h-3 w-3 shrink-0 text-[11px]" svgClassName="[&>svg]:block" />
+                            <span className="truncate">{item.boardName}</span>
+                          </Link>
+                          <span className="shrink-0">•</span>
+                        </>
+                      ) : null}
+                      <VipNameTooltip isVip={item.authorIsVip} level={item.authorVipLevel}>
+                        <Link href={`/users/${item.authorUsername}`} className={cn("min-w-0 shrink truncate", item.authorNameClassName ?? "hover:underline")} title={item.authorName}>
+                          {item.authorName}
                         </Link>
-                        <span className="shrink-0">•</span>
-                      </>
-                    ) : null}
-                    <VipNameTooltip isVip={item.authorIsVip} level={item.authorVipLevel}>
-                      <Link href={`/users/${item.authorUsername}`} className={cn("min-w-0 shrink truncate", item.authorNameClassName ?? "hover:underline")} title={item.authorName}>
-                        {item.authorName}
-                      </Link>
-                    </VipNameTooltip>
-                    {isRestrictedAuthor ? <UserStatusBadge status={item.authorStatus} compact /> : null}
-                    <span className="shrink-0">•</span>
-                    <TimeTooltip value={item.metaPrimaryRaw}>
-                      <span className="truncate">{item.metaPrimary}</span>
-                    </TimeTooltip>
-                    {item.metaSecondary ? (
-                      <>
-                        <span className="shrink-0">·</span>
-                        <span className="truncate" title={item.metaSecondary}>{item.metaSecondary}</span>
-                      </>
-                    ) : null}
+                      </VipNameTooltip>
+                      {isRestrictedAuthor ? <UserStatusBadge status={item.authorStatus} compact /> : null}
+                      <span className="shrink-0">•</span>
+                      <TimeTooltip value={item.metaPrimaryRaw}>
+                        <span className="truncate">{item.metaPrimary}</span>
+                      </TimeTooltip>
+                      {item.metaSecondary ? (
+                        <>
+                          <span className="shrink-0">·</span>
+                          <span className="truncate" title={item.metaSecondary}>{item.metaSecondary}</span>
+                        </>
+                      ) : null}
+                    </div>
+                    <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex shrink-0 items-center gap-0.5 tabular-nums transition-colors hover:opacity-90" style={{ color: item.commentAccentColor }}>
+                      <MessageCircle className="h-3 w-3" />
+                      {formatCompactNumber(item.commentCount)}
+                    </PostListLink>
                   </div>
                 </div>
 

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { ForumPostStreamView } from "@/components/forum/forum-post-stream-view"
 import type { TaxonomyPostSortLinks } from "@/lib/forum-taxonomy-sort"
 import type { PostStreamDisplayItem } from "@/lib/forum-post-stream-display"
-import { normalizePostListDisplayMode, POST_LIST_DISPLAY_MODE_GALLERY, type PostListDisplayMode } from "@/lib/post-list-display"
+import type { PostListDisplayMode } from "@/lib/post-list-display"
 
 interface InfiniteForumPostStreamProps {
   apiPath: string
@@ -25,11 +25,6 @@ interface PostStreamApiPayload {
   hasNextPage: boolean
 }
 
-interface PostStreamItemPage {
-  page: number
-  items: PostStreamDisplayItem[]
-}
-
 export function InfiniteForumPostStream({
   apiPath,
   initialItems,
@@ -42,7 +37,6 @@ export function InfiniteForumPostStream({
   sortLinks,
 }: InfiniteForumPostStreamProps) {
   const [items, setItems] = useState(initialItems)
-  const [itemPages, setItemPages] = useState<PostStreamItemPage[]>(() => [{ page: initialPage, items: initialItems }])
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -51,8 +45,6 @@ export function InfiniteForumPostStream({
   const hasNextPageRef = useRef(initialHasNextPage)
   const isLoadingRef = useRef(false)
   const loadedIdsRef = useRef(new Set(initialItems.map((item) => item.id)))
-  const resolvedListDisplayMode = normalizePostListDisplayMode(listDisplayMode)
-  const shouldRenderGalleryPages = resolvedListDisplayMode === POST_LIST_DISPLAY_MODE_GALLERY
 
   const loadMore = useCallback(async () => {
     if (isLoadingRef.current || !hasNextPageRef.current) {
@@ -86,7 +78,6 @@ export function InfiniteForumPostStream({
 
       if (nextItems.length > 0) {
         setItems((current) => [...current, ...nextItems])
-        setItemPages((current) => [...current, { page: nextResultPage, items: nextItems }])
       }
       pageRef.current = Math.max(currentPage, nextResultPage)
       hasNextPageRef.current = nextHasNextPage
@@ -105,7 +96,6 @@ export function InfiniteForumPostStream({
     isLoadingRef.current = false
     loadedIdsRef.current = new Set(initialItems.map((item) => item.id))
     setItems(initialItems)
-    setItemPages([{ page: initialPage, items: initialItems }])
     setHasNextPage(initialHasNextPage)
     setIsLoading(false)
     setError("")
@@ -129,30 +119,14 @@ export function InfiniteForumPostStream({
 
   return (
     <div className="space-y-4">
-      {shouldRenderGalleryPages ? (
-        <div className="space-y-3">
-          {itemPages.map((itemPage, index) => itemPage.items.length > 0 ? (
-            <ForumPostStreamView
-              key={itemPage.page}
-              items={itemPage.items}
-              listDisplayMode={listDisplayMode}
-              showBoard={showBoard}
-              showPinnedDivider={index === 0 ? showPinnedDivider : false}
-              postLinkDisplayMode={postLinkDisplayMode}
-              sortLinks={index === 0 ? sortLinks : undefined}
-            />
-          ) : null)}
-        </div>
-      ) : (
-        <ForumPostStreamView
-          items={items}
-          listDisplayMode={listDisplayMode}
-          showBoard={showBoard}
-          showPinnedDivider={showPinnedDivider}
-          postLinkDisplayMode={postLinkDisplayMode}
-          sortLinks={sortLinks}
-        />
-      )}
+      <ForumPostStreamView
+        items={items}
+        listDisplayMode={listDisplayMode}
+        showBoard={showBoard}
+        showPinnedDivider={showPinnedDivider}
+        postLinkDisplayMode={postLinkDisplayMode}
+        sortLinks={sortLinks}
+      />
       {hasNextPage ? (
         <div className="flex flex-col items-center gap-3 py-4">
           <div ref={sentinelRef} className="h-1 w-full" aria-hidden="true" />
