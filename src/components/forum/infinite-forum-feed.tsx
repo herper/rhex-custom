@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { ForumFeedView } from "@/components/forum/forum-feed-view"
 import type { FeedSort } from "@/lib/forum-feed"
 import type { FeedDisplayItem } from "@/lib/forum-feed-display"
-import type { PostListDisplayMode } from "@/lib/post-list-display"
+import { normalizePostListDisplayMode, POST_LIST_DISPLAY_MODE_GALLERY, type PostListDisplayMode } from "@/lib/post-list-display"
 
 interface InfiniteForumFeedProps {
   initialItems: FeedDisplayItem[]
@@ -22,6 +22,11 @@ interface FeedApiPayload {
   hasNextPage: boolean
 }
 
+interface FeedItemPage {
+  page: number
+  items: FeedDisplayItem[]
+}
+
 export function InfiniteForumFeed({
   initialItems,
   initialPage,
@@ -31,6 +36,7 @@ export function InfiniteForumFeed({
   postLinkDisplayMode = "SLUG",
 }: InfiniteForumFeedProps) {
   const [items, setItems] = useState(initialItems)
+  const [itemPages, setItemPages] = useState<FeedItemPage[]>(() => [{ page: initialPage, items: initialItems }])
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,6 +44,9 @@ export function InfiniteForumFeed({
   const pageRef = useRef(initialPage)
   const hasNextPageRef = useRef(initialHasNextPage)
   const isLoadingRef = useRef(false)
+  const loadedIdsRef = useRef(new Set(initialItems.map((item) => item.id)))
+  const resolvedListDisplayMode = normalizePostListDisplayMode(listDisplayMode)
+  const shouldRenderGalleryPages = resolvedListDisplayMode === POST_LIST_DISPLAY_MODE_GALLERY
 
   const loadMore = useCallback(async () => {
     if (isLoadingRef.current || !hasNextPageRef.current) {
@@ -63,12 +72,13 @@ export function InfiniteForumFeed({
 
       const nextResultPage = result.data.page
       const nextHasNextPage = result.data.hasNextPage && nextResultPage > currentPage
-      setItems((current) => {
-        const existingIds = new Set(current.map((item) => item.id))
-        const nextItems = result.data!.items.filter((item) => !existingIds.has(item.id))
+      const nextItems = result.data.items.filter((item) => !loadedIdsRef.current.has(item.id))
+      nextItems.forEach((item) => loadedIdsRef.current.add(item.id))
 
-        return [...current, ...nextItems]
-      })
+      if (nextItems.length > 0) {
+        setItems((current) => [...current, ...nextItems])
+        setItemPages((current) => [...current, { page: nextResultPage, items: nextItems }])
+      }
       pageRef.current = Math.max(currentPage, nextResultPage)
       hasNextPageRef.current = nextHasNextPage
       setHasNextPage(nextHasNextPage)
@@ -84,7 +94,9 @@ export function InfiniteForumFeed({
     pageRef.current = initialPage
     hasNextPageRef.current = initialHasNextPage
     isLoadingRef.current = false
+    loadedIdsRef.current = new Set(initialItems.map((item) => item.id))
     setItems(initialItems)
+    setItemPages([{ page: initialPage, items: initialItems }])
     setHasNextPage(initialHasNextPage)
     setIsLoading(false)
     setError("")
@@ -108,11 +120,24 @@ export function InfiniteForumFeed({
 
   return (
     <div className="space-y-4">
-      <ForumFeedView
-        items={items}
-        listDisplayMode={listDisplayMode}
-        postLinkDisplayMode={postLinkDisplayMode}
-      />
+      {shouldRenderGalleryPages ? (
+        <div className="space-y-3">
+          {itemPages.map((itemPage) => itemPage.items.length > 0 ? (
+            <ForumFeedView
+              key={itemPage.page}
+              items={itemPage.items}
+              listDisplayMode={listDisplayMode}
+              postLinkDisplayMode={postLinkDisplayMode}
+            />
+          ) : null)}
+        </div>
+      ) : (
+        <ForumFeedView
+          items={items}
+          listDisplayMode={listDisplayMode}
+          postLinkDisplayMode={postLinkDisplayMode}
+        />
+      )}
       {hasNextPage ? (
         <div className="flex flex-col items-center gap-3 py-4">
           <div ref={sentinelRef} className="h-1 w-full" aria-hidden="true" />
