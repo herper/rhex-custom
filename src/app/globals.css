@@ -1345,21 +1345,20 @@
   }
 
   .post-gallery-grid {
-    column-gap: 0.5rem;
-    column-width: 15.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 
-  @media (max-width: 1023px) {
-    .post-gallery-grid {
-      column-count: 2;
-      column-width: auto;
-    }
+  .post-gallery-column {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .post-gallery-card {
-    break-inside: avoid;
-    display: inline-block;
-    margin-bottom: 0.5rem;
     width: 100%;
   }
 

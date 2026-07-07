@@ -1,15 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { ImageIcon, ImageOff, MessageCircle, type LucideIcon } from "lucide-react"
 
 import { LevelIcon } from "@/components/level-icon"
 import { PostListLink } from "@/components/post/post-list-link"
 import { getPostTitleClassName, PostAccessBadges, PostPinBadge, PostRewardPoolIcon, PostStatusBadge, PostTypeBadge } from "@/components/post/post-list-shared"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TimeTooltip } from "@/components/time-tooltip"
 import { Tooltip } from "@/components/ui/tooltip"
+import { UserAvatar } from "@/components/user/user-avatar"
 import { UserStatusBadge } from "@/components/user/user-status-badge"
 import { VipNameTooltip } from "@/components/vip/vip-name-tooltip"
 import { formatCompactNumber, formatNumber } from "@/lib/formatters"
@@ -42,6 +42,7 @@ interface PostGalleryGridProps {
     boardIcon?: string
     authorName: string
     authorUsername: string
+    authorAvatarPath?: string | null
     authorStatus?: "ACTIVE" | "MUTED" | "BANNED" | "INACTIVE"
     authorIsVip?: boolean
     authorVipLevel?: number | null
@@ -57,9 +58,10 @@ interface PostGalleryGridProps {
   showPinBadge?: boolean
 }
 
-function GalleryCoverPlaceholder({ label, icon: Icon = ImageIcon }: { label: string; icon?: LucideIcon }) {
+function GalleryCoverPlaceholder({ label, icon: Icon = ImageIcon, overlay }: { label: string; icon?: LucideIcon; overlay?: ReactNode }) {
   return (
-    <div className="flex min-h-[154px] items-center justify-center bg-[linear-gradient(135deg,rgba(249,115,22,0.12),rgba(15,23,42,0.04))] px-3 py-[2.1rem] text-muted-foreground">
+    <div className="relative flex min-h-[154px] items-center justify-center bg-[linear-gradient(135deg,rgba(249,115,22,0.12),rgba(15,23,42,0.04))] px-3 py-[2.1rem] text-muted-foreground">
+      {overlay}
       <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/85 px-2.5 py-1 text-[13px] shadow-xs">
         <Icon className="h-3 w-3" />
         <span>{label}</span>
@@ -68,7 +70,7 @@ function GalleryCoverPlaceholder({ label, icon: Icon = ImageIcon }: { label: str
   )
 }
 
-function GalleryCoverImage({ src, title }: { src: string; title: string }) {
+function GalleryCoverImage({ src, title, overlay }: { src: string; title: string; overlay?: ReactNode }) {
   const imageRef = useRef<HTMLImageElement | null>(null)
   const [hasLoadError, setHasLoadError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -102,12 +104,13 @@ function GalleryCoverImage({ src, title }: { src: string; title: string }) {
   }, [imageSrc])
 
   if (hasLoadError) {
-    return <GalleryCoverPlaceholder label="封面暂不可用" icon={ImageOff} />
+    return <GalleryCoverPlaceholder label="封面暂不可用" icon={ImageOff} overlay={overlay} />
   }
 
   return (
     <div className="relative min-h-[154px] overflow-hidden bg-secondary/40">
       {!imageLoaded ? <Skeleton aria-hidden="true" className="absolute inset-0 rounded-none" /> : null}
+      {overlay}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imageRef}
@@ -135,28 +138,112 @@ function GalleryCoverImage({ src, title }: { src: string; title: string }) {
   )
 }
 
-function PostGalleryCover({ coverImage, title }: { coverImage?: string | null; title: string }) {
+function PostGalleryCover({ coverImage, title, overlay }: { coverImage?: string | null; title: string; overlay?: ReactNode }) {
   const normalizedCoverImage = coverImage?.trim() ?? ""
 
   if (!normalizedCoverImage) {
-    return <GalleryCoverPlaceholder label="无封面图" />
+    return <GalleryCoverPlaceholder label="无封面图" overlay={overlay} />
   }
 
-  return <GalleryCoverImage key={normalizedCoverImage} src={normalizedCoverImage} title={title} />
+  return <GalleryCoverImage key={normalizedCoverImage} src={normalizedCoverImage} title={title} overlay={overlay} />
+}
+
+function resolveGalleryColumnCount(width: number, viewportWidth: number) {
+  if (width <= 0) {
+    return 2
+  }
+
+  if (viewportWidth < 768) {
+    return 2
+  }
+
+  const targetColumnWidth = 232
+  const columnGap = 8
+  return Math.max(1, Math.floor((width + columnGap) / (targetColumnWidth + columnGap)))
+}
+
+function distributeGalleryItems<T>(items: T[], columnCount: number) {
+  const columns = Array.from({ length: columnCount }, () => [] as T[])
+
+  items.forEach((item, index) => {
+    columns[index % columnCount]?.push(item)
+  })
+
+  return columns
+}
+
+function GalleryCoverBadges({ item, showPinBadge }: { item: PostGalleryGridProps["items"][number]; showPinBadge: boolean }) {
+  const hasBadges = Boolean(
+    (showPinBadge && item.pinScope) ||
+    item.isFeatured ||
+    (item.status && item.status !== "NORMAL") ||
+    (item.type && item.type !== "NORMAL" && item.typeLabel) ||
+    item.hasRedPacket,
+  )
+
+  if (!hasBadges) {
+    return null
+  }
+
+  return (
+    <div className="pointer-events-none absolute right-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-1">
+      {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact className="pointer-events-auto shrink-0 bg-background/90 shadow-sm backdrop-blur" /> : null}
+      {item.isFeatured ? <span className="shrink-0 rounded-full bg-emerald-100/95 px-2 py-[0.2rem] text-[10px] text-emerald-700 shadow-sm backdrop-blur dark:bg-emerald-500/80 dark:text-emerald-50">精华</span> : null}
+      <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact className="pointer-events-auto shrink-0 bg-background/90 shadow-sm backdrop-blur" />
+      <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly className="shrink-0 shadow-sm backdrop-blur" />
+      {item.hasRedPacket ? (
+        <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+          <span className="pointer-events-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-background/90 shadow-sm backdrop-blur" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+            <PostRewardPoolIcon mode={item.rewardMode} className="h-3.5 w-3.5" />
+          </span>
+        </Tooltip>
+      ) : null}
+    </div>
+  )
 }
 
 export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode = "SLUG", showPinBadge = true }: PostGalleryGridProps) {
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const [columnCount, setColumnCount] = useState(2)
+  const columns = distributeGalleryItems(items, columnCount)
+
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid) {
+      return
+    }
+
+    const updateColumnCount = () => {
+      setColumnCount((current) => {
+        const nextColumnCount = resolveGalleryColumnCount(grid.clientWidth, window.innerWidth)
+        return current === nextColumnCount ? current : nextColumnCount
+      })
+    }
+
+    updateColumnCount()
+
+    const observer = new ResizeObserver(updateColumnCount)
+    observer.observe(grid)
+    window.addEventListener("resize", updateColumnCount)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", updateColumnCount)
+    }
+  }, [])
+
   return (
-    <div className="post-gallery-grid px-1.5 py-1.5 sm:px-2">
-      {items.map((item) => {
+    <div ref={gridRef} className="post-gallery-grid px-1.5 py-1.5 sm:px-2">
+      {columns.map((columnItems, columnIndex) => (
+        <div key={columnIndex} className="post-gallery-column">
+          {columnItems.map((item) => {
         const postPath = getPostPath({ id: item.id, slug: item.slug }, { mode: postLinkDisplayMode })
         const isRestrictedAuthor = item.authorStatus === "BANNED" || item.authorStatus === "MUTED"
-        const hasSideBadges = Boolean(item.isFeatured || (item.status && item.status !== "NORMAL") || (item.type && item.type !== "NORMAL" && item.typeLabel))
 
         return (
           <article key={item.id} className="post-gallery-card overflow-hidden rounded-[17px] border border-border bg-card transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xs">
             <PostListLink href={postPath} className="block">
-              <PostGalleryCover coverImage={item.coverImage} title={item.title} />
+              <PostGalleryCover coverImage={item.coverImage} title={item.title} overlay={<GalleryCoverBadges item={item} showPinBadge={showPinBadge} />} />
             </PostListLink>
 
             <div className="space-y-2 p-[0.7rem]">
@@ -168,21 +255,10 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                         {item.title}
                       </h2>
                     </PostListLink>
-                    {item.hasRedPacket ? (
-                      <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-                        <span className="shrink-0" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-                          <PostRewardPoolIcon mode={item.rewardMode} className="h-3.5 w-3.5" />
-                        </span>
-                      </Tooltip>
-                    ) : null}
                     <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
                   </div>
 
-                  <div className="mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden">
-                    {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact className="shrink-0" /> : null}
-                  </div>
-
-                  <div className={cn("mt-2 flex min-w-0 items-center justify-between gap-1.5 overflow-hidden text-[11px] text-muted-foreground", isRestrictedAuthor && "grayscale")}>
+                  <div className={cn("mt-2 flex min-w-0 items-center justify-between gap-1.5 overflow-hidden text-xs text-muted-foreground", isRestrictedAuthor && "grayscale")}>
                     <div className="flex min-w-0 items-center gap-1 overflow-hidden">
                       {showBoard && item.boardSlug ? (
                         <>
@@ -193,22 +269,15 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                           <span className="shrink-0">•</span>
                         </>
                       ) : null}
+                      <Link href={`/users/${item.authorUsername}`} className="shrink-0" title={item.authorName}>
+                        <UserAvatar name={item.authorName} avatarPath={item.authorAvatarPath} size="xs" isVip={item.authorIsVip} vipLevel={item.authorVipLevel} />
+                      </Link>
                       <VipNameTooltip isVip={item.authorIsVip} level={item.authorVipLevel}>
-                        <Link href={`/users/${item.authorUsername}`} className={cn("min-w-0 shrink truncate", item.authorNameClassName ?? "hover:underline")} title={item.authorName}>
+                        <Link href={`/users/${item.authorUsername}`} className={cn("min-w-0 shrink truncate font-medium", item.authorNameClassName ?? "hover:underline")} title={item.authorName}>
                           {item.authorName}
                         </Link>
                       </VipNameTooltip>
                       {isRestrictedAuthor ? <UserStatusBadge status={item.authorStatus} compact /> : null}
-                      <span className="shrink-0">•</span>
-                      <TimeTooltip value={item.metaPrimaryRaw}>
-                        <span className="truncate">{item.metaPrimary}</span>
-                      </TimeTooltip>
-                      {item.metaSecondary ? (
-                        <>
-                          <span className="shrink-0">·</span>
-                          <span className="truncate" title={item.metaSecondary}>{item.metaSecondary}</span>
-                        </>
-                      ) : null}
                     </div>
                     <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex shrink-0 items-center gap-0.5 tabular-nums transition-colors hover:opacity-90" style={{ color: item.commentAccentColor }}>
                       <MessageCircle className="h-3 w-3" />
@@ -216,19 +285,13 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                     </PostListLink>
                   </div>
                 </div>
-
-                {hasSideBadges ? (
-                  <div className="flex shrink-0 flex-col items-end gap-1.5 self-center">
-                    {item.isFeatured ? <span className="rounded-full bg-emerald-100 px-2 py-[0.2rem] text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">精华</span> : null}
-                    <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
-                    <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly />
-                  </div>
-                ) : null}
               </div>
             </div>
           </article>
         )
-      })}
+          })}
+        </div>
+      ))}
     </div>
   )
 }
