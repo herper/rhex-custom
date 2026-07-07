@@ -39,7 +39,7 @@ export function ForumFeedView({ items, listDisplayMode, postLinkDisplayMode = "S
         </div>
       ) : null}
       {resolvedListDisplayMode === POST_LIST_DISPLAY_MODE_GALLERY ? (
-        <PostGalleryGrid items={normalItems} showBoard showPinBadge={false} postLinkDisplayMode={postLinkDisplayMode} />
+        <PostGalleryGrid items={normalItems} showBoard={false} showPinBadge={false} postLinkDisplayMode={postLinkDisplayMode} />
       ) : resolvedListDisplayMode === POST_LIST_DISPLAY_MODE_WEIBO ? (
         <AddonSurfaceClientRenderer
           surface="post.weibo.feed"

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { ImageIcon, ImageOff, MessageCircle, type LucideIcon } from "lucide-react"
+import { ImageIcon, ImageOff, type LucideIcon } from "lucide-react"
 
 import { LevelIcon } from "@/components/level-icon"
 import { PostListLink } from "@/components/post/post-list-link"
@@ -12,7 +12,6 @@ import { TimeTooltip } from "@/components/time-tooltip"
 import { Tooltip } from "@/components/ui/tooltip"
 import { UserStatusBadge } from "@/components/user/user-status-badge"
 import { VipNameTooltip } from "@/components/vip/vip-name-tooltip"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
 import { getPostPath } from "@/lib/post-links"
 import type { PostRewardPoolMode } from "@/lib/post-reward-pool-config"
 import { cn } from "@/lib/utils"
@@ -133,6 +132,7 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
       {items.map((item) => {
         const postPath = getPostPath({ id: item.id, slug: item.slug }, { mode: postLinkDisplayMode })
         const isRestrictedAuthor = item.authorStatus === "BANNED" || item.authorStatus === "MUTED"
+        const hasSideBadges = Boolean(item.isFeatured || (item.status && item.status !== "NORMAL") || (item.type && item.type !== "NORMAL" && item.typeLabel))
 
         return (
           <article key={item.id} className="post-gallery-card overflow-hidden rounded-[17px] border border-border bg-card transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xs">
@@ -192,15 +192,13 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                   </div>
                 </div>
 
-                <div className="flex shrink-0 flex-col items-end gap-1.5 self-center">
-                  <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex items-center gap-1 rounded-full px-2 py-[0.2rem] text-[10px] font-medium tabular-nums" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
-                    <MessageCircle className="h-3 w-3" />
-                    {formatCompactNumber(item.commentCount)}
-                  </PostListLink>
-                  {item.isFeatured ? <span className="rounded-full bg-emerald-100 px-2 py-[0.2rem] text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">精华</span> : null}
-                  <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
-                  <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly />
-                </div>
+                {hasSideBadges ? (
+                  <div className="flex shrink-0 flex-col items-end gap-1.5 self-center">
+                    {item.isFeatured ? <span className="rounded-full bg-emerald-100 px-2 py-[0.2rem] text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">精华</span> : null}
+                    <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
+                    <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly />
+                  </div>
+                ) : null}
               </div>
             </div>
           </article>
