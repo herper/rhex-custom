@@ -70,6 +70,7 @@ const HOME_FEED_LABELS: Record<HomeFeedSort, string> = {
   latest: "首页",
   new: "新贴",
   hot: "热门",
+  featured: "精华",
   following: "我的关注",
   universe: "宇宙",
 }

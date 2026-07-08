@@ -188,7 +188,7 @@ function GalleryCoverBadges({ item, showPinBadge }: { item: PostGalleryGridProps
   return (
     <div className="pointer-events-none absolute right-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-1">
       {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact className="pointer-events-auto shrink-0 bg-background/90 shadow-sm backdrop-blur" /> : null}
-      {item.isFeatured ? <span className="shrink-0 rounded-full bg-emerald-100/95 px-2 py-[0.2rem] text-[10px] text-emerald-700 shadow-sm backdrop-blur dark:bg-emerald-500/80 dark:text-emerald-50">精华</span> : null}
+      {item.isFeatured ? <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-emerald-100/95 px-2 text-[10px] leading-none text-emerald-700 shadow-sm backdrop-blur dark:bg-emerald-500/80 dark:text-emerald-50">精华</span> : null}
       <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact className="pointer-events-auto shrink-0 bg-background/90 shadow-sm backdrop-blur" />
       <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly className="shrink-0 shadow-sm backdrop-blur" />
       {item.hasRedPacket ? (
@@ -279,7 +279,7 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                       </VipNameTooltip>
                       {isRestrictedAuthor ? <UserStatusBadge status={item.authorStatus} compact /> : null}
                     </div>
-                    <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex shrink-0 items-center gap-0.5 tabular-nums transition-colors hover:opacity-90" style={{ color: item.commentAccentColor }}>
+                    <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-normal tabular-nums transition-colors hover:opacity-90 sm:px-2 sm:text-[11px]" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
                       <MessageCircle className="h-3 w-3" />
                       {formatCompactNumber(item.commentCount)}
                     </PostListLink>
