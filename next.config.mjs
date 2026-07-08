@@ -32,6 +32,7 @@ const nextConfig = {
   },
   serverExternalPackages: ["@napi-rs/canvas", "ioredis", "ip2region", "nodemailer"],
   experimental: {
+    ...(isProductionBuild ? { cpus: 4 } : {}),
     serverSourceMaps:false,
     proxyClientMaxBodySize: "64mb",
     staticGenerationRetryCount: 1,

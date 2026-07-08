@@ -1,5 +1,6 @@
 import { Prisma, TargetType } from "@/db/types"
 import { prisma } from "@/db/client"
+import { recalculatePostScore } from "@/db/post-score-queries"
 
 
 
@@ -124,6 +125,7 @@ export async function togglePostLike(params: {
       })
 
       await tx.post.update({ where: { id: params.postId }, data: { likeCount: { decrement: 1 } } })
+      await recalculatePostScore(params.postId, tx)
     })
 
     return {
@@ -157,6 +159,7 @@ export async function togglePostLike(params: {
     }
 
     await tx.post.update({ where: { id: params.postId }, data: { likeCount: { increment: 1 } } })
+    await recalculatePostScore(params.postId, tx)
   })
 
   return {
@@ -219,6 +222,5 @@ export async function togglePostFavorite(params: {
     favored: true,
   }
 }
-
 
 

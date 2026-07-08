@@ -6,6 +6,7 @@ import {
   type Prisma,
 } from "@/db/types"
 import { prisma } from "@/db/client"
+import { recalculatePostScore } from "@/db/post-score-queries"
 
 import { apiError } from "@/lib/api-route"
 import { enqueueBackgroundJob, registerBackgroundJobHandler } from "@/lib/background-jobs"
@@ -574,6 +575,7 @@ async function createAiReplyComment(params: {
         activityAt: createdAt,
       },
     })
+    await recalculatePostScore(params.postId, tx)
 
     return comment
   })
