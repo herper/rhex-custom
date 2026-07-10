@@ -12,7 +12,6 @@ export function TouchNativeNavigation() {
         || event.ctrlKey
         || event.shiftKey
         || event.altKey
-        || !window.matchMedia("(pointer: coarse)").matches
         || !(event.target instanceof Element)
       ) {
         return
@@ -30,6 +29,20 @@ export function TouchNativeNavigation() {
 
       const destination = new URL(anchor.href, window.location.href)
       if (destination.origin !== window.location.origin) {
+        return
+      }
+
+      if (
+        !window.matchMedia("(pointer: coarse)").matches
+        && anchor.closest("[data-infinite-post-stream]")
+        && destination.pathname.startsWith("/posts/")
+      ) {
+        anchor.target = "_blank"
+        anchor.rel = "noopener noreferrer"
+        return
+      }
+
+      if (!window.matchMedia("(pointer: coarse)").matches) {
         return
       }
 
