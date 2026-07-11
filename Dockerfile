@@ -39,7 +39,9 @@ RUN mkdir -p addons
 COPY package.json pnpm-lock.yaml .npmrc ./
 COPY prisma ./prisma
 
-RUN if [ -n "${PNPM_REGISTRY}" ]; then pnpm config set registry "${PNPM_REGISTRY}"; fi \
+RUN --mount=type=cache,id=rhex-pnpm-store,target=/pnpm/store \
+  pnpm config set store-dir /pnpm/store \
+  && if [ -n "${PNPM_REGISTRY}" ]; then pnpm config set registry "${PNPM_REGISTRY}"; fi \
   && pnpm install --frozen-lockfile
 
 COPY . .

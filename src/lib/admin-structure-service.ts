@@ -80,6 +80,7 @@ function isRecord(value: unknown): value is MutableRecord {
 function buildBoardConfigJson(body: Record<string, unknown>, currentConfig?: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined {
   const hasSidebarFields = [
     "sidebarLinks",
+    "sidebarEnabled",
     "rulesMarkdown",
     "moderatorsCanWithdrawTreasury",
   ].some((field) => field in body)
@@ -89,6 +90,7 @@ function buildBoardConfigJson(body: Record<string, unknown>, currentConfig?: unk
   }
 
   const hasSidebarLinks = "sidebarLinks" in body
+  const hasSidebarEnabled = "sidebarEnabled" in body
   const hasRulesMarkdown = "rulesMarkdown" in body
   const hasTreasuryFields = "moderatorsCanWithdrawTreasury" in body
   const sidebarLinks = hasSidebarLinks ? normalizeBoardSidebarLinks(body.sidebarLinks) : null
@@ -96,6 +98,10 @@ function buildBoardConfigJson(body: Record<string, unknown>, currentConfig?: unk
   const nextConfig = isRecord(currentConfig) ? { ...currentConfig } : {}
   const nextSidebar = isRecord(nextConfig.sidebar) ? { ...nextConfig.sidebar } : {}
   const nextBoardTreasury = isRecord(nextConfig.boardTreasury) ? { ...nextConfig.boardTreasury } : {}
+
+  if (hasSidebarEnabled) {
+    nextSidebar.enabled = parseBoolean(body.sidebarEnabled)
+  }
 
   if (hasSidebarLinks) {
     if (sidebarLinks && sidebarLinks.length > 0) {
