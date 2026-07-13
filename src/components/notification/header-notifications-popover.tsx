@@ -269,6 +269,7 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
                 <a
                   key={item.id}
                   href={item.relatedUrl}
+                  data-disable-touch-native-navigation="true"
                   className="group rounded-xl px-3 py-2.5 outline-hidden transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={(event) => handleNotificationClick(event, item)}
                 >

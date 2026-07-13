@@ -2835,6 +2835,7 @@ model InviteCode {
 
   @@index([createdById])
   @@index([usedById])
+  @@index([usedAt, createdAt])
   @@index([createdAt])
 }
 
