@@ -105,7 +105,7 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
 
       <div className="mobile-sidebar-section rounded-xl border border-border bg-card p-3 shadow-xs shadow-black/5 dark:shadow-black/30">
         <div className="mb-3 flex items-center gap-1.5">
-          <Flame className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+          <Flame className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">今日热帖</h3>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -133,9 +133,9 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
         <section className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-sky-500" />
+              <Link2 className="h-4 w-4 text-primary" />
               <div>
-                <h3 className="font-semibold">友情链接</h3>
+                <h3 className="text-sm font-semibold">友情链接</h3>
               </div>
             </div>
             <Link href="/link" className="text-xs text-muted-foreground transition hover:text-foreground">全部链接</Link>
