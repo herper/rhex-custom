@@ -94,10 +94,18 @@ export function UserAvatar({ name, avatarPath, size = "md", className, isVip = f
 
   return (
     <div className={cn("group/avatar relative aspect-square shrink-0", sizeClasses[size], className)}>
-      <div className="relative h-full w-full overflow-hidden rounded-xl bg-card" style={{ backgroundColor: colors.background, color: colors.foreground }}>
+      <div
+        className="relative h-full w-full overflow-hidden rounded-xl bg-card"
+        style={{
+          backgroundColor: colors.background,
+          color: colors.foreground,
+        }}
+      >
         {showTextFallback ? (
-          <div className={cn("flex h-full w-full items-center justify-center font-semibold tracking-wide", fallbackSizeClasses[size])}>
-            {fallback}
+          <div className="flex h-full w-full items-center justify-center">
+            <span className={cn("font-semibold tracking-[0.02em]", fallbackSizeClasses[size])}>
+              {fallback}
+            </span>
           </div>
         ) : null}
         {hasCustomAvatar ? (

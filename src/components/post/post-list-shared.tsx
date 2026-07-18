@@ -97,12 +97,14 @@ export function PostTypeBadge({
   label,
   compact = false,
   mobileIconOnly = false,
+  display = "all",
   className,
 }: {
   type?: string | null
   label?: string | null
   compact?: boolean
   mobileIconOnly?: boolean
+  display?: "all" | "icon" | "text"
   className?: string
 }) {
   if (!type || type === "NORMAL" || !label) {
@@ -112,6 +114,10 @@ export function PostTypeBadge({
   const config = type in postTypeBadgeMap
     ? postTypeBadgeMap[type as keyof typeof postTypeBadgeMap]
     : null
+
+  if (display === "icon" && !config) {
+    return null
+  }
 
   if (!config) {
     return (
@@ -129,6 +135,7 @@ export function PostTypeBadge({
   }
 
   const Icon = config.icon
+  const iconOnly = display === "icon"
 
   return (
     <Badge
@@ -136,14 +143,16 @@ export function PostTypeBadge({
       aria-label={label}
       className={cn(
         "rounded-[4px]",
-        mobileIconOnly
+        iconOnly
+          ? compact ? "size-5 p-0" : "size-6 p-0"
+          : mobileIconOnly
           ? "size-5 p-0 sm:w-fit sm:px-2 sm:py-0.5 sm:text-[11px]"
           : compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5",
         className,
       )}
     >
-      <Icon {...(mobileIconOnly ? {} : { "data-icon": "inline-start" })} />
-      <span className={mobileIconOnly ? "hidden sm:inline" : undefined}>{label}</span>
+      <Icon {...(iconOnly || mobileIconOnly ? {} : { "data-icon": "inline-start" })} />
+      {iconOnly ? null : <span className={mobileIconOnly ? "hidden sm:inline" : undefined}>{label}</span>}
     </Badge>
   )
 }
@@ -178,7 +187,7 @@ export function PostStatusBadge({
       <Badge
         variant="outline"
         className={cn(
-          "rounded-[4px] font-medium",
+          "rounded-[4px] font-medium leading-none",
           compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5",
           toneClassName,
           className,
@@ -194,11 +203,13 @@ export function PostPinBadge({
   scope,
   label,
   compact = false,
+  display = "icon",
   className,
 }: {
   scope?: string | null
   label?: string | null
   compact?: boolean
+  display?: "icon" | "text"
   className?: string
 }) {
   if (!scope) {
@@ -221,9 +232,16 @@ export function PostPinBadge({
       <Badge
         variant={config.variant}
         aria-label={tooltipLabel}
-        className={cn("rounded-[4px]", compact ? "size-5 p-0" : "size-6 p-0", className)}
+        className={cn(
+          "rounded-[4px]",
+          display === "text"
+            ? compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5"
+            : compact ? "size-5 p-0" : "size-6 p-0",
+          className,
+        )}
       >
-        <Icon />
+        <Icon {...(display === "text" ? { "data-icon": "inline-start" } : {})} />
+        {display === "text" ? <span>{tooltipLabel}</span> : null}
       </Badge>
     </Tooltip>
   )
