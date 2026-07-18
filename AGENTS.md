@@ -12,19 +12,19 @@
 ## Docker 镜像
 - 生产服务器默认按 `linux/amd64` 处理。
 - **正式发布统一使用 GitHub Actions**：提交并推送到 `main` 后，由 `.github/workflows/publish-image.yml` 在 GitHub 的 `ubuntu-latest` 环境构建并推送 GHCR；不要将日常发布改回本机构建推送。
-- 每次推送 `main` 都必须更新 `ghcr.io/momofa/rhex-custom:latest`，并同时发布不可变的提交标签（例如 `ghcr.io/momofa/rhex-custom:sha-e7ca3cc`），用于追溯与回滚；不要依赖 GitHub 仓库的默认分支判断 `latest`。
+- 每次推送 `main` 都必须更新 `ghcr.io/momofa/rhex:latest`，并同时发布不可变的提交标签（例如 `ghcr.io/momofa/rhex:sha-e7ca3cc`），用于追溯与回滚；不要依赖 GitHub 仓库的默认分支判断 `latest`。
 - 正式发布流程为：本地验证 → `git commit` → `git push origin main` → 确认 `Publish Docker Image` 成功 → 服务器拉取新镜像并重启服务。
 - 本地 Docker 构建仅用于调试、本地测试，或 GitHub Actions 不可用时的紧急兜底；不要使用本机默认 `docker build` 后 `docker push`，因为 Apple Silicon 本机可能默认产出 `linux/arm64`。
 - 紧急本地发布必须显式构建 `linux/amd64`：
 
 ```bash
-docker buildx build --platform linux/amd64 -t ghcr.io/momofa/rhex-custom:latest --push .
+docker buildx build --platform linux/amd64 -t ghcr.io/momofa/rhex:latest --push .
 ```
 
 - 紧急本地发布推送后必须验证镜像平台：
 
 ```bash
-docker buildx imagetools inspect ghcr.io/momofa/rhex-custom:latest
+docker buildx imagetools inspect ghcr.io/momofa/rhex:latest
 ```
 
 - 验证结果中运行镜像 manifest 必须包含：

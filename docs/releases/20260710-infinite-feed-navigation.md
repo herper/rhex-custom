@@ -31,7 +31,7 @@ git push origin HEAD:main
 ## Docker 镜像
 
 ```text
-ghcr.io/momofa/rhex-custom:latest
+ghcr.io/momofa/rhex:latest
 ```
 
 生产服务器平台为 `linux/amd64`。
