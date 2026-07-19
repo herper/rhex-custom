@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { usePathname } from "next/navigation"
 
 import { ForumFeedView } from "@/components/forum/forum-feed-view"
 import type { FeedSort } from "@/lib/forum-feed"
@@ -30,6 +31,7 @@ export function InfiniteForumFeed({
   listDisplayMode,
   postLinkDisplayMode = "SLUG",
 }: InfiniteForumFeedProps) {
+  const pathname = usePathname()
   const [items, setItems] = useState(initialItems)
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage)
   const [isLoading, setIsLoading] = useState(false)
@@ -39,6 +41,7 @@ export function InfiniteForumFeed({
   const hasNextPageRef = useRef(initialHasNextPage)
   const isLoadingRef = useRef(false)
   const loadedIdsRef = useRef(new Set(initialItems.map((item) => item.id)))
+  const requestGenerationRef = useRef(0)
 
   const loadMore = useCallback(async () => {
     if (isLoadingRef.current || !hasNextPageRef.current) {
@@ -47,6 +50,7 @@ export function InfiniteForumFeed({
 
     const currentPage = pageRef.current
     const nextPage = currentPage + 1
+    const requestGeneration = requestGenerationRef.current
     isLoadingRef.current = true
     setIsLoading(true)
     setError("")
@@ -56,6 +60,10 @@ export function InfiniteForumFeed({
         credentials: "same-origin",
       })
       const result = await response.json().catch(() => null) as { data?: FeedApiPayload; message?: string } | null
+
+      if (requestGeneration !== requestGenerationRef.current) {
+        return
+      }
 
       if (!response.ok || !result?.data) {
         setError(result?.message || "加载更多帖子失败")
@@ -74,14 +82,19 @@ export function InfiniteForumFeed({
       hasNextPageRef.current = nextHasNextPage
       setHasNextPage(nextHasNextPage)
     } catch {
-      setError("加载更多帖子失败")
+      if (requestGeneration === requestGenerationRef.current) {
+        setError("加载更多帖子失败")
+      }
     } finally {
-      isLoadingRef.current = false
-      setIsLoading(false)
+      if (requestGeneration === requestGenerationRef.current) {
+        isLoadingRef.current = false
+        setIsLoading(false)
+      }
     }
   }, [currentSort])
 
   useEffect(() => {
+    requestGenerationRef.current += 1
     pageRef.current = initialPage
     hasNextPageRef.current = initialHasNextPage
     isLoadingRef.current = false
@@ -90,7 +103,7 @@ export function InfiniteForumFeed({
     setHasNextPage(initialHasNextPage)
     setIsLoading(false)
     setError("")
-  }, [currentSort, initialHasNextPage, initialItems, initialPage])
+  }, [currentSort, initialHasNextPage, initialItems, initialPage, pathname])
 
   useEffect(() => {
     if (!hasNextPage || !sentinelRef.current) {

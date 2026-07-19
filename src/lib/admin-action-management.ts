@@ -29,6 +29,7 @@ const adminActionPermissions: Record<string, AdminPermissionKey> = {
   "user.vip": "admin.users.manage",
   "user.vip.configure": "admin.users.manage",
   "user.badge.grant": "admin.users.grantBadges",
+  "user.badge.revoke": "admin.users.grantBadges",
   "user.notification.send": "admin.users.manage",
   "post.feature": "admin.content.manage",
   "post.pin": "admin.content.manage",

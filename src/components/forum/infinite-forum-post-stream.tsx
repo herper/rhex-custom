@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { usePathname } from "next/navigation"
 
 import { ForumPostStreamView } from "@/components/forum/forum-post-stream-view"
 import type { TaxonomyPostSortLinks } from "@/lib/forum-taxonomy-sort"
@@ -36,6 +37,7 @@ export function InfiniteForumPostStream({
   postLinkDisplayMode = "SLUG",
   sortLinks,
 }: InfiniteForumPostStreamProps) {
+  const pathname = usePathname()
   const [items, setItems] = useState(initialItems)
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage)
   const [isLoading, setIsLoading] = useState(false)
@@ -45,6 +47,7 @@ export function InfiniteForumPostStream({
   const hasNextPageRef = useRef(initialHasNextPage)
   const isLoadingRef = useRef(false)
   const loadedIdsRef = useRef(new Set(initialItems.map((item) => item.id)))
+  const requestGenerationRef = useRef(0)
 
   const loadMore = useCallback(async () => {
     if (isLoadingRef.current || !hasNextPageRef.current) {
@@ -53,6 +56,7 @@ export function InfiniteForumPostStream({
 
     const currentPage = pageRef.current
     const nextPage = currentPage + 1
+    const requestGeneration = requestGenerationRef.current
     isLoadingRef.current = true
     setIsLoading(true)
     setError("")
@@ -65,6 +69,10 @@ export function InfiniteForumPostStream({
         credentials: "same-origin",
       })
       const result = await response.json().catch(() => null) as { data?: PostStreamApiPayload; message?: string } | null
+
+      if (requestGeneration !== requestGenerationRef.current) {
+        return
+      }
 
       if (!response.ok || !result?.data) {
         setError(result?.message || "加载更多帖子失败")
@@ -83,14 +91,19 @@ export function InfiniteForumPostStream({
       hasNextPageRef.current = nextHasNextPage
       setHasNextPage(nextHasNextPage)
     } catch {
-      setError("加载更多帖子失败")
+      if (requestGeneration === requestGenerationRef.current) {
+        setError("加载更多帖子失败")
+      }
     } finally {
-      isLoadingRef.current = false
-      setIsLoading(false)
+      if (requestGeneration === requestGenerationRef.current) {
+        isLoadingRef.current = false
+        setIsLoading(false)
+      }
     }
   }, [apiPath])
 
   useEffect(() => {
+    requestGenerationRef.current += 1
     pageRef.current = initialPage
     hasNextPageRef.current = initialHasNextPage
     isLoadingRef.current = false
@@ -99,7 +112,7 @@ export function InfiniteForumPostStream({
     setHasNextPage(initialHasNextPage)
     setIsLoading(false)
     setError("")
-  }, [apiPath, initialHasNextPage, initialItems, initialPage])
+  }, [apiPath, initialHasNextPage, initialItems, initialPage, pathname])
 
   useEffect(() => {
     if (!hasNextPage || !sentinelRef.current) {

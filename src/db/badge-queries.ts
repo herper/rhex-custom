@@ -112,6 +112,12 @@ export function findGrantedUserBadge(userId: number, badgeId: string) {
   })
 }
 
+export function deleteGrantedUserBadgeById(id: string, client?: Prisma.TransactionClient) {
+  return (client ?? prisma).userBadge.delete({
+    where: { id },
+  })
+}
+
 export function findAllBadgesWithRules() {
   return prisma.badge.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
